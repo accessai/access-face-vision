@@ -1,5 +1,5 @@
 import logging
-from access_fiu import access_logger
+from access_face_vision import access_logger
 from time import sleep, time
 from multiprocessing import Process
 import traceback
@@ -54,7 +54,7 @@ def generate_embeddings(in_que, quit, log_que, log_level):
                 labels.extend([obj.get('label')] * len(obj.get('faces')))
 
         assert len(embeddings) == len(faces) == len(labels), 'Emeds: {}, Faces: {}, Labels: {}'.format(len(embeddings), len(faces), len(labels))
-        savez_compressed('../output/data.npz', embeddings=embeddings, faces=faces, labels=labels)
+        savez_compressed('../output/data2.npz', embeddings=embeddings, faces=faces, labels=labels)
 
     except Exception as ex:
         logger.error(traceback.format_exc())

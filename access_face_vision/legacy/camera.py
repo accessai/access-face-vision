@@ -1,6 +1,6 @@
 import signal
 import logging
-from access_fiu import access_logger
+from access_face_vision import access_logger
 from multiprocessing import Value, Process
 from time import time, sleep
 import math
@@ -9,15 +9,15 @@ import yaml
 
 import cv2
 
-from access_fiu import utils
+from access_face_vision import utils
 
 
 class Camera(object):
 
-    def __init__(self, output_queue, quit, config, log_que, draw_frames=False, log_level=logging.INFO):
+    def __init__(self, output_queue, quit, args, log_que, draw_frames=False, log_level=logging.INFO):
         self.quit = quit
-        self.device = config.get('device', 0)
-        self.img_dim = (config.get('capture_img_width', 1280), config.get('capture_img_height', 720))
+        self.device = args.camera_index or args.camera_url
+        self.img_dim = (args.img_width, args.img_height)
         self.process = Process(target=capture, args=(output_queue, quit, self.device, log_que, log_level, draw_frames,
                                                      self.img_dim))
 
@@ -37,8 +37,7 @@ class Camera(object):
 def capture(queue, quit, device, log_que, log_level, draw_frames=False, img_dim=(1280,720)):
 
     access_logger.conf_worker_logger(log_que)
-    logger = logging.getLogger(__name__)
-    logger.setLevel(log_level)
+    logger = utils.get_logger(log_que, log_level)
 
     NUM_FRAME_TO_SKIP = 2
 
@@ -46,8 +45,9 @@ def capture(queue, quit, device, log_que, log_level, draw_frames=False, img_dim=
     # If the input is the camera, pass 0 instead of the video file n
     logger.info('Aquiring camera. Please wait...')
     sleep(25)
-    factor = 0.3
-    cap = cv2.VideoCapture(device, cv2.CAP_DSHOW)
+    factor = utils.REDUCTION_FACTOR
+    # cap = cv2.VideoCapture(device, cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture('../output/bg3.mp4')
     logger.info('Camera acquired')
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, img_dim[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, img_dim[1])
@@ -96,7 +96,7 @@ def capture(queue, quit, device, log_que, log_level, draw_frames=False, img_dim=
             count=0
 
         if ret is True:
-            cv2.flip(frame, 1, frame)
+            # cv2.flip(frame, 1, frame)
             if skip_count >= NUM_FRAME_TO_SKIP:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 red_frame_rgb = cv2.resize(frame_rgb, (int(frame.shape[1] * factor), int(frame.shape[0] * factor)))
@@ -124,9 +124,10 @@ def capture(queue, quit, device, log_que, log_level, draw_frames=False, img_dim=
             break
 
     cap.release()
-    quit.value = 1
+    # quit.value = 1
     utils.clean_queue(queue)
     cv2.destroyAllWindows()
+    logger.warning('Exiting from Camera Process')
 
 
 if __name__ == '__main__':

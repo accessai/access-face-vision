@@ -24,20 +24,6 @@ def draw_round_rectangle(img, top_left, bottom_right):
 
     cv2.rectangle(img,(x1,y1), (x2,y2),color,thickness=-1, lineType=cv2.LINE_AA)
 
-    # #draw lines
-    # #top
-    # cv2.line(img, (border_radius, edge_shift),
-    # (width - border_radius, edge_shift), color, line_thickness)
-    # #bottom
-    # cv2.line(img, (border_radius, height-line_thickness),
-    # (width - border_radius, height-line_thickness), color, line_thickness)
-    # #left
-    # cv2.line(img, (edge_shift, border_radius),
-    # (edge_shift, height  - border_radius), color, line_thickness)
-    # #right
-    # cv2.line(img, (width - line_thickness, border_radius),
-    # (width - line_thickness, height  - border_radius), color, line_thickness)
-
     # corners
     cv2.ellipse(img, (x1 + r, y1 + r),
                 (border_radius, border_radius), 180, 0, 100, color, line_thickness, lineType=cv2.LINE_AA)

@@ -3,9 +3,9 @@ from time import sleep
 import signal
 import sys
 
-from access_fiu.camera import Camera
-from access_fiu.display import Display
-from access_fiu.face_detector import FaceDetector
+from access_face_vision.camera import Camera
+from access_face_vision.display import Display
+from access_face_vision.face_detector import FaceDetector
 
 quit = Value('i',0)
 

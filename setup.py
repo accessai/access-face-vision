@@ -1,9 +1,9 @@
 from setuptools import find_namespace_packages
 from setuptools import setup
-from access_fiu.about import __version__, __license__
+from access_face_vision.about import __version__, __license__
 
 setup(
-    name="access-fiu",
+    name="access_face_vision",
     classifiers=[
         "Intended Audience :: Developers",
         "License :: Commercial License",
@@ -20,12 +20,16 @@ setup(
     packages=find_namespace_packages(exclude=["sample", "tests"]),
     license=__license__,
     long_description=open("README.md").read(),
+    include_package_data=True,
     install_requires=[
         "opencv-python==4.1.0.25",
         "keras==2.2.4",
         "mtcnn==0.0.9",
         "tensorflow==1.12.3",
         "pillow==6.0.0",
-        "scikit-learn==0.21.2"
+        "scikit-learn==0.21.2",
+        "klein==19.6.0",
+        "pypiwin32==223",
+        "pymongo==3.8.0"
     ],
 )

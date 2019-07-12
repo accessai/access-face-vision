@@ -1,7 +1,7 @@
 import logging
 import argparse
 from multiprocessing import Queue, Value
-from access_fiu import access_logger
+from access_face_vision import access_logger
 from time import sleep
 
 log_que = Queue(-1)
@@ -9,10 +9,10 @@ que_listener = access_logger.get_listener_logger(log_que)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-from access_fiu.face_detector import FaceDetector
-from access_fiu.face_encoder import FaceEncoder
-from access_fiu.source.directory import DirectoryReader
-from access_fiu.embedding_generator import EmbeddingGenerator
+from access_face_vision.face_detector import FaceDetector
+from access_face_vision.face_encoder import FaceEncoder
+from access_face_vision.source.image_reader import ImageReader
+from access_face_vision.embedding_generator import EmbeddingGenerator
 
 
 def _create_parser():
@@ -29,7 +29,7 @@ def generate_embeddings(args):
     detector_out_que = Queue()
     encoder_out_que = Queue()
 
-    dir_reader = DirectoryReader(args.image_dir, camera_out_que, quit, log_que)
+    dir_reader = ImageReader(args.image_dir, camera_out_que, quit, log_que)
     face_detector = FaceDetector(camera_out_que, detector_out_que, quit, log_que)
     face_encoder = FaceEncoder(detector_out_que, encoder_out_que, quit, log_que)
     embed_gen = EmbeddingGenerator(encoder_out_que, quit, log_que)
