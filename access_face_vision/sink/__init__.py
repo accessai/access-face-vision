@@ -22,7 +22,7 @@ def draw_on_frame(obj):
                     (top_left[0], top_left[1]), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8,
                     color=(0, 255, 0), thickness=1)
 
-    time_txt = 'Detection: {:0.2f}, Encoding: {:0.2f}, Recog: {:0.2f} Total: {:0.2f}, FPS: {:0.2f}'.format(
+    time_txt = 'Detection: {:0.2f}, Encoding: {:0.2f}, Recognition: {:0.2f} Total: {:0.2f}, FPS: {:0.2f}'.format(
         obj.get('detection_time',-1),
         obj.get('encoding_time',-1),
         obj.get('recognition_time',-1),

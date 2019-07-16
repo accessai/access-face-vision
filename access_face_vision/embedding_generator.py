@@ -1,64 +1,52 @@
-import logging
-from access_face_vision import access_logger
-from time import sleep, time
-from multiprocessing import Process
 import traceback
 from queue import Empty
 
-from numpy import savez_compressed
+from access_face_vision.access_logger import get_logger
+from access_face_vision.component import AccessComponent
+from access_face_vision.face_group_manager import FaceGroupLocalManager
 
 
-class EmbeddingGenerator(object):
-    def __init__(self, in_que, quit, log_que, log_level=logging.INFO):
-        self.quit = quit
-        self.process = Process(target=generate_embeddings, args=(in_que, quit, log_que, log_level))
+class EmbeddingGenerator(AccessComponent):
+    def __init__(self, cmd_args, in_que, log_que, log_level, kill_app, is_sub_proc=False):
+        self.is_sub_proc = is_sub_proc
 
-    def __del__(self):
-        self.quit.value = 1
-
-    def start(self):
-        self.process.daemon = True
-        self.process.start()
-
-    def stop(self):
-        self.quit.value = 1
-        self.process.close()
-        self.process.join(timeout=1)
+        super(EmbeddingGenerator, self).__init__(embedding_generator,
+                                           cmd_args=cmd_args,
+                                           in_que=in_que,
+                                           log_que=log_que,
+                                           log_level=log_level,
+                                           kill_app=kill_app)
 
 
-def generate_embeddings(in_que, quit, log_que, log_level):
-    access_logger.conf_worker_logger(log_que)
-    logger = logging.getLogger(__name__)
-    logger.setLevel(log_level)
+def embedding_generator(cmd_args, in_que, log_que, log_level, kill_proc, kill_app):
+
+    logger = get_logger(log_que, log_level)
 
     try:
         logger.info("Generating embeddings...")
+        face_group_manager = FaceGroupLocalManager(cmd_args)
+        face_group_manager.create_face_group('default')
 
-        embeddings, faces, labels = [], [], []
-        while quit.value != 1:
+        while kill_proc.value == 0 and kill_app.value == 0:
             try:
-
-                obj = in_que.get(block=False)
-                if obj.get('done', False):
-                    logger.info("Exiting from embedding generator")
-                    break
-
+                obj = in_que.get(block=True, timeout=1)
             except Empty as emp:
-                logger.debug("Input que to embedding generator is empty.")
-                sleep(0.1)
+                logger.debug('Input que to face detector is empty.')
                 continue
 
-            if len(obj.get('faces', [])) > 0:
-                embeddings.extend(obj.get('embeddings',[]))
-                faces.extend(obj.get('faces', []))
-                labels.extend([obj.get('label')] * len(obj.get('faces')))
+            if obj.get('done', False):
+                kill_app.value = 1
+                break
 
-        assert len(embeddings) == len(faces) == len(labels), 'Emeds: {}, Faces: {}, Labels: {}'.format(len(embeddings), len(faces), len(labels))
-        savez_compressed('../output/data2.npz', embeddings=embeddings, faces=faces, labels=labels)
+            if len(obj.get('faces', [])) == 1:
+                face_group_manager.append_to_face_group(obj.get('face_group') or 'default',
+                                                        obj['embeddings'][0],
+                                                        obj['label'])
+            else:
+                logger.error("0 or more than 1 face detected for {}".format(obj['label']))
 
     except Exception as ex:
         logger.error(traceback.format_exc())
-        quit.value = 1
+        kill_app.value = 1
     finally:
-        logger.warning('Exiting from Embedding Generator')
-        quit.value = 1
+        logger.info('Exiting from Embedding Generator')

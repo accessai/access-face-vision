@@ -13,26 +13,20 @@ from access_face_vision.face_detector import FaceDetector
 from access_face_vision.face_encoder import FaceEncoder
 from access_face_vision.source.image_reader import ImageReader
 from access_face_vision.embedding_generator import EmbeddingGenerator
+from access_face_vision import utils
 
 
-def _create_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--image_dir', help='Path to image to process', required=True, type=str)
+def train_face_recognition_model(cmd_args):
 
-    return parser.parse_args()
-
-
-def generate_embeddings(args):
-
-    quit = Value('i', 0)
+    kill_app = Value('i', 0)
     camera_out_que = Queue()
     detector_out_que = Queue()
     encoder_out_que = Queue()
 
-    dir_reader = ImageReader(args.image_dir, camera_out_que, quit, log_que)
-    face_detector = FaceDetector(camera_out_que, detector_out_que, quit, log_que)
-    face_encoder = FaceEncoder(detector_out_que, encoder_out_que, quit, log_que)
-    embed_gen = EmbeddingGenerator(encoder_out_que, quit, log_que)
+    dir_reader = ImageReader(cmd_args, camera_out_que, log_que, 'info', kill_app, True)
+    face_detector = FaceDetector(cmd_args, camera_out_que, detector_out_que, log_que, 'info', kill_app, True)
+    face_encoder = FaceEncoder(cmd_args, detector_out_que, encoder_out_que, log_que, 'info', kill_app, True)
+    embed_gen = EmbeddingGenerator(cmd_args, encoder_out_que, log_que, 'info', kill_app, True)
 
     face_detector.start()
     face_encoder.start()
@@ -40,13 +34,13 @@ def generate_embeddings(args):
     dir_reader.start()
 
     que_listener.start()
-    while quit.value != 1:
+    while kill_app.value != 1:
         sleep(0.2)
 
+    logger.info('Main process exited')
     que_listener.stop()
-    logger.warning('Main process exited')
 
 
 if __name__ == '__main__':
-    args = _create_parser()
-    generate_embeddings(args)
+    cmd_args = utils.create_parser()
+    train_face_recognition_model(cmd_args)

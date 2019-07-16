@@ -1,5 +1,9 @@
 import os
 import logging
+from glob import glob
+from threading import Lock
+import uuid
+from time import time
 
 import numpy as np
 from numpy import savez_compressed
@@ -11,23 +15,23 @@ logger = logging.getLogger(__name__)
 
 
 class FaceGroup(object):
+
+    def __init__(self, faceIds, embeddings, labels):
+        self.faceIds = faceIds
+        self.embeddings = embeddings
+        self.labels = labels
+
+
+class FaceGroupManager(object):
+
     def __init__(self):
-        pass
+        self.io_lock = Lock()
 
-    def create_face_group(self, face_group_name):
-        pass
-
-    def append_to_face_group(self, face, face_group_name):
-        pass
-
-    def delete_from_face_group(self, face_id, face_group_name):
-        pass
-
-    def delete_face_group(self, face_group_name):
-        pass
+    def generate_face_id(self, label):
+        return "{}-{}-{}".format(label[:4], str(uuid.uuid4()), str(int(time()))[-8:])
 
 
-class FaceGroupMongoManager(FaceGroup):
+class FaceGroupMongoManager(FaceGroupManager):
 
     def __init__(self, mongo_connect_str):
         super(FaceGroupMongoManager, self).__init__()
@@ -55,62 +59,101 @@ class FaceGroupMongoManager(FaceGroup):
         self.mongo_manager.delete_collection(collection)
 
 
-class FaceGroupLocalManager(FaceGroup):
+class FaceGroupLocalManager(FaceGroupManager):
 
-    def __init__(self, dir_name):
+    def __init__(self, cmd_args):
         super(FaceGroupLocalManager, self).__init__()
-        self.dir_name = dir_name
+        self.dir_name = cmd_args.face_group_dir
+        self.face_group_store = {}
+        self.fill_face_group_store()
 
-    def _get_file_path(self, face_group_name):
-        return os.path.join(self.dir_name, face_group_name + '.npz')
+    def create_face_group(self, fg_name):
+        self._save_face_group(fg_name, FaceGroup(np.array([]), np.array([]), np.array([])), overwrite=False)
 
-    def _save_face_group(self, file_path, faceIds, embeddings, labels):
-        savez_compressed(file_path, faceIds=faceIds, embeddings=embeddings, labels=labels)
+    def append_to_face_group(self, fg_name, embedding, label):
+        faceId = self.generate_face_id(label)
+        fg = self._get_face_group(fg_name)
+        if len(fg.embeddings)==0:
+            fg.embeddings = np.empty((0,embedding.size), dtype=np.float32)
+        fg.embeddings = np.append(fg.embeddings, np.array([embedding]), axis=0)
+        fg.labels = np.append(fg.labels, np.array([label]), axis=0)
+        fg.faceIds = np.append(fg.faceIds, np.array([faceId]), axis=0)
 
-    def _load_face_group(self, file_path):
-        face_group = np.load(file_path)
-        faceIds = face_group['faceIds']
-        embeddings = face_group['embeddings']
-        labels = face_group['labels']
+        self._save_face_group(fg_name, fg)
+        return faceId
 
-        return faceIds, embeddings, labels
+    def get_face_group(self, fg_name):
+        return self._get_face_group(fg_name)
 
-    def create_face_group(self, face_group_name):
-        file_path = self._get_file_path(face_group_name)
-        savez_compressed(file_path, faceIds=np.array([]), embeddings=np.array([]), labels=np.array([]))
+    def delete_from_face_group(self, face_id, fg_name):
 
-    def append_to_face_group(self, face, face_group_name):
-        file_path = self._get_file_path(face_group_name)
-        faceIds, embeddings, labels = self._load_face_group(file_path)
+        fg = self._get_face_group(fg_name)
 
-        embeddings.append(face['embedding'])
-        labels.append(face['label'])
-        faceIds.append(face['faceId'])
-
-        self._save_face_group(file_path, faceIds, embeddings, labels)
-        return faceIds, embeddings, labels
-
-    def delete_from_face_group(self, face_id, face_group_name):
-        file_path = self._get_file_path(face_group_name)
-        faceIds, embeddings, labels = self._load_face_group(file_path)
-
-        delete_index = np.where(faceIds==face_id)
+        delete_index = np.where(fg.faceIds == face_id)
 
         if len(delete_index) > 0:
             delete_index = delete_index[0]
-            faceIds = np.delete(faceIds, delete_index, axis=0)
-            embeddings = np.delete(embeddings, delete_index, axis=0)
-            labels = np.delete(labels, delete_index, axis=0)
+            faceIds = np.delete(fg.faceIds, delete_index, axis=0)
+            embeddings = np.delete(fg.embeddings, delete_index, axis=0)
+            labels = np.delete(fg.labels, delete_index, axis=0)
 
-            self._save_face_group(file_path, faceIds, embeddings, labels)
-            return faceIds, embeddings, labels
+            fg.faceIds = faceIds
+            fg.embeddings = embeddings
+            fg.labels = labels
+
+            self._save_face_group(fg_name, fg)
+            return fg
 
         else:
             raise AccessException('faceId not found: {}'.format(face_id))
 
-    def delete_face_group(self, face_group_name):
-        file_path = self._get_file_path(face_group_name)
-        try:
-            os.remove(file_path)
-        except:
-            raise AccessException('Could not delete {}'.format(file_path))
+    def delete_face_group(self, fg_name):
+        self._delete_face_group(fg_name)
+
+    def fill_face_group_store(self):
+        face_groups = glob(os.path.join(self.dir_name, "**/*.npz"))[:5]
+        for fg in face_groups:
+            fg_name = os.path.basename(fg).split(".")[0]
+            self._get_face_group(fg_name)  # updates self.face_group_store internally
+
+    def get_file_path(self, fg_name):
+        return os.path.join(self.dir_name, fg_name + '.npz')
+
+    def _save_face_group(self, fg_name, fg, overwrite=True):
+
+        file_path = self.get_file_path(fg_name)
+        if os.path.exists(file_path) and overwrite is False:
+            raise AccessException("FaceGroup {} already exists.".format(fg_name), error_code=409)
+
+        with self.io_lock:
+            savez_compressed(file_path, faceIds=fg.faceIds, embeddings=fg.embeddings,
+                             labels=fg.labels)
+            self.face_group_store[fg_name] = fg
+
+    def _get_face_group(self, fg_name):
+        with self.io_lock:
+            fg = self.face_group_store.get(fg_name)
+            if fg is not None:
+                return self.face_group_store.get(fg_name)
+            else:
+                file_path = self.get_file_path(fg_name)
+
+                try:
+                    fg = np.load(file_path)
+                except IOError as ioe:
+                    raise AccessException(str(ioe))
+                except ValueError as ve:
+                    raise AccessException(str(ve))
+
+                fg = FaceGroup(fg['faceIds'], fg['embeddings'], fg['labels'])
+                self.face_group_store[fg_name] = fg
+                return fg
+
+    def _delete_face_group(self, fg_name):
+        with self.io_lock:
+            file_path = self.get_file_path(fg_name)
+            try:
+                del self.face_group_store[fg_name]
+                os.remove(file_path)
+            except Exception as ex:
+                raise AccessException('Could not delete {}. Error {}'.format(file_path, str(ex)))

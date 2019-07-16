@@ -1,4 +1,3 @@
-import logging
 from access_face_vision import access_logger
 from multiprocessing import Queue, Value
 
@@ -15,9 +14,11 @@ from access_face_vision.face_encoder import FaceEncoder
 from access_face_vision.face_recogniser import CosineSimFaceRecogniser
 from access_face_vision.sink.display import Display
 
+from access_face_vision.face_group_manager import FaceGroupLocalManager
+
 from access_face_vision import utils
 from access_face_vision import server
-
+from access_face_vision.exceptions import AccessException
 
 kill_app = Value('i', 0)
 
@@ -34,53 +35,106 @@ signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 
 
-class AccessFaceVisionImage(object):
+class AccessFaceVision(object):
 
     def __init__(self, cmd_args):
         self.cmd_args = cmd_args
+        self.fg_manager = FaceGroupLocalManager(cmd_args)
+
+
+class AccessFaceVisionImage(AccessFaceVision):
+    def __init__(self, cmd_args):
+        super(AccessFaceVisionImage, self).__init__(cmd_args)
         self.face_detector = FaceDetector(cmd_args, None, None, log_que, cmd_args.log, kill_app, is_sub_proc=False)
         self.face_encoder = FaceEncoder(cmd_args, None, None, log_que,cmd_args.log,kill_app, is_sub_proc=False)
-        self.face_recogniser = CosineSimFaceRecogniser(cmd_args, None, None, log_que, cmd_args.log, kill_app, is_sub_proc=False)
+        self.face_recogniser = CosineSimFaceRecogniser(cmd_args, None, None, self.fg_manager,
+                                                       log_que, cmd_args.log, kill_app, is_sub_proc=False)
 
-    def parse_image(self, img_bytes):
-        img = Image.open(img_bytes)
-
-        if img.format not in ['jpg', 'jpeg']:
-            img = img.convert('RGB')
+    def parse_image(self, img, face_group):
 
         img = np.array(img)
         obj = self.face_detector({'cap_time': time(), 'raw_frame': img,
-                           'small_rgb_frame': img, 'factor': 1.})
+                           'small_rgb_frame': img, 'factor': 1.,'face_group': face_group})
         obj = self.face_encoder(obj)
         obj = self.face_recogniser(obj)
 
         faces = []
         detections = obj.get('detections', [])
         detections.extend(obj.get('uncertain_detection', []))
-        for r in detections:
+        for face in detections:
             faces.append(
-                {'faceId': 0, 'box': r['rectangular_coordinates'], 'label': r['label'], 'confidence': float(r['confidence'])}
+                {'faceId': face['faceId'], 'box': face['rectangular_coordinates'], 'label': face['label'],
+                 'confidence': float(face['confidence'])}
             )
 
         return {'faces': faces}
 
-    def parse_video(self, stream):
-        pass
+    def encode(self, img):
 
-    def create_face_group(self, face_group_name):
-        pass
+        obj = self.face_detector({'cap_time': time(), 'raw_frame': img,
+                                  'small_rgb_frame': img, 'factor': 1.})
+        obj = self.face_encoder(obj)
 
-    def append_to_face_group(self, img_bytes):
-        pass
+        return obj
 
-    def delete_face_group(self, face_group_name):
-        pass
+    def create_face_group(self, fg_name):
+        self.fg_manager.create_face_group(fg_name)
+        return {'message': 'Face group {} created successfully'.format(fg_name)}
 
-    def remove_from_face_group(self, face_id):
-        pass
+    def append_to_face_group(self, fg_name, img_bytes, label):
+        obj = self.encode(img_bytes)
+        faces = obj.get('detections', [])
 
-    def list_face_ids(self, face_group_name):
-        pass
+        if len(faces) == 0:
+            return AccessException('No face found', error_code=400)
+        elif len(faces) > 1:
+            return AccessException('More than one face found', error_code=400)
+        else:
+            embedding = faces[0]['embeddings'][0]
+            face_id = self.fg_manager.append_to_face_group(fg_name, embedding, label)
+            return {'face_id': face_id}
+
+    def delete_face_group(self, fg_name):
+        self.fg_manager.delete_face_group(fg_name)
+
+    def delete_from_face_group(self, face_id, fg_name):
+        self.delete_from_face_group(face_id, fg_name)
+
+    def list_face_ids(self, fg_name):
+        fg = self.fg_manager.get_face_group(fg_name)
+
+        return {'face_ids': fg.faceIds}
+
+
+class AccessFaceVisionVideo(AccessFaceVision):
+
+    def __init__(self, cmd_args):
+        super(AccessFaceVisionVideo, self).__init__(cmd_args)
+        self.camera_out_que = Queue()
+        self.face_detector_out_que = Queue()
+        self.face_encoder_out_que = Queue()
+        self.face_recogniser_out_que = Queue()
+
+        self.camera = Camera(cmd_args, self.camera_out_que, log_que, cmd_args.log, kill_app, draw_frames=False)
+        self.face_detector = FaceDetector(cmd_args, self.camera_out_que, self.face_detector_out_que, log_que, cmd_args.log, kill_app, is_sub_proc=True)
+        self.face_encoder = FaceEncoder(cmd_args, self.face_detector_out_que, self.face_encoder_out_que, log_que, cmd_args.log,kill_app, is_sub_proc=True)
+        self.face_recogniser = CosineSimFaceRecogniser(cmd_args, self.face_encoder_out_que,
+                                                       self.face_recogniser_out_que, None, log_que, cmd_args.log, kill_app, is_sub_proc=True)
+        self.display = Display(cmd_args,self.face_recogniser_out_que, log_que, cmd_args.log, kill_app, is_sub_proc=True)
+
+    def start(self):
+        self.display.start()
+        self.face_recogniser.start()
+        self.face_encoder.start()
+        self.face_detector.start()
+        self.camera.start()
+
+    def stop(self):
+        self.camera.stop()
+        self.face_detector.stop()
+        self.face_encoder.stop()
+        self.face_recogniser.stop()
+        self.display.stop()
 
 
 if __name__ == '__main__':
@@ -88,10 +142,24 @@ if __name__ == '__main__':
     cmd_args = utils.create_parser()
 
     logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log)
-    afv = AccessFaceVisionImage(cmd_args)
-    server_app = server.app
-    server.setup_routes(cmd_args, afv)
-    sleep(20)
-    logger.info("Ready...")
-    server_app.run(host=cmd_args.host, port=cmd_args.port)
+
+    if cmd_args.mode == 'server':
+        afv = AccessFaceVisionImage(cmd_args)
+        server_app = server.app
+        server.setup_routes(cmd_args, afv)
+        sleep(20)
+        logger.info("Ready...")
+        server_app.run(host=cmd_args.host, port=cmd_args.port)
+    elif cmd_args.mode == 'video':
+        afv = AccessFaceVisionVideo(cmd_args)
+        afv.start()
+
+        while kill_app.value == 0:
+            sleep(0.5)
+
+        afv.stop()
+        logger.info("Exiting application")
+        que_listener.stop()
+    else:
+        raise RuntimeError('Unknown mode.')
 

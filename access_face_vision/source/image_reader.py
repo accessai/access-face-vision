@@ -8,22 +8,28 @@ from PIL import Image
 import numpy as np
 
 from access_face_vision.component import AccessComponent
-from access_face_vision import utils
+from access_face_vision.access_logger import get_logger
 
 
 class ImageReader(AccessComponent):
 
-    def __init__(self, cmd_args, *args, **kwargs):
-        kwargs['img_dir'] = cmd_args.img_dir
-        super(ImageReader, self).__init__(read_from_directory, *args, **kwargs)
+    def __init__(self, cmd_args, out_que, log_que, log_level, kill_app, is_sub_proc=False):
+        self.is_sub_proc = is_sub_proc
+
+        super(ImageReader, self).__init__(image_reader,
+                                           cmd_args=cmd_args,
+                                           out_que=out_que,
+                                           log_que=log_que,
+                                           log_level=log_level,
+                                           kill_app=kill_app)
 
 
-def read_from_directory(img_dir, out_que, log_que, log_level, kill_proc, kill_app):
+def image_reader(cmd_args, out_que, log_que, log_level, kill_proc, kill_app):
 
-    access_logger.conf_worker_logger(log_que)
-    logger = utils.get_logger(log_que, log_level)
+    logger = get_logger(log_que, log_level)
 
     try:
+        img_dir = cmd_args.img_dir
         images = glob(os.path.join(img_dir, "**/*.*"), recursive=True)
         logger.info("Reading images from path {}, Total files {}...".format(img_dir, len(images)))
 
@@ -39,10 +45,11 @@ def read_from_directory(img_dir, out_que, log_que, log_level, kill_proc, kill_ap
 
             img = np.array(Image.open(img_path))
             obj = {"raw_frame": img, "cap_time": time(), 'factor': 1, 'small_rgb_frame': img,
-                   'label': os.path.basename(img_path).split(".")[0]}
+                   'label': " ".join(os.path.basename(img_path).split(".")[0].split("_")[:-1])}
             out_que.put(obj)
         out_que.put({"done": True})
     except Exception as ex:
         logger.error(traceback.format_exc())
+        kill_app.value = 1
     finally:
-        logger.warning('Exiting from Directory Reader')
+        logger.info('Exiting from Directory Reader')

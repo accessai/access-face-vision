@@ -15,6 +15,7 @@ class FaceDetector(AccessComponent):
         self.is_sub_proc = is_sub_proc
 
         if is_sub_proc is False:
+            self.logger = get_logger(log_que, log_level)
             self.mtcnn = MTCNN()
             self.graph = tf.get_default_graph()
             self.session = tf.Session(graph=self.graph)
@@ -30,11 +31,11 @@ class FaceDetector(AccessComponent):
     def __call__(self, obj):
         with self.graph.as_default():
             with self.session.as_default():
-                return detect_face(obj, self.mtcnn, self.cmd_args.detection_threshold, self.cmd_args.min_face_height)
+                return detect_face(obj, self.mtcnn, self.cmd_args.detection_threshold,
+                                   self.cmd_args.min_face_height, self.logger)
 
 
-def detect_face(obj, mtcnn, detection_threshold, min_face_height):
-
+def detect_face(obj, mtcnn, detection_threshold, min_face_height, logger):
     time_in = time()
 
     red_frame_rgb = obj.get('small_rgb_frame', None)
@@ -45,7 +46,8 @@ def detect_face(obj, mtcnn, detection_threshold, min_face_height):
         results = mtcnn.detect_faces(red_frame_rgb)
 
         for r in results:
-            if r.get('confidence', -1) >= detection_threshold:
+            r['detection_confidence'] = r['confidence']
+            if r['detection_confidence'] >= detection_threshold:
                 x, y, width, height = r['box']
                 s_x1, s_y1 = abs(x), abs(y)
                 s_x2, s_y2 = s_x1 + width, s_y1 + height
@@ -61,9 +63,13 @@ def detect_face(obj, mtcnn, detection_threshold, min_face_height):
                 r['label'] = 'Unknown'
                 r['rectangular_coordinates'] = {'x1': int(x), 'x2': int(x + width), 'y1': int(y), 'y2': int(y + height)}
                 if height < min_face_height:
+                    logger.warning("Short face detected of size {}. Required {}".format(height, min_face_height))
                     uncertain_results.append(r)
                 else:
                     final_results.append(r)
+            else:
+                logger.warning("Low face detection confidence {:0.2f}. Required {:0.2f}".format(
+                    r.get('detection_confidence'), detection_threshold))
 
     results = final_results
     time_out = time()
@@ -97,7 +103,7 @@ def face_detector(cmd_args, in_que, out_que, log_que, log_level, kill_proc, kill
                 out_que.put(obj)
                 break
 
-            obj = detect_face(obj,mtcnn,detection_threshold,min_face_height)
+            obj = detect_face(obj,mtcnn,detection_threshold,min_face_height, logger)
             out_que.put(obj)
 
     except Exception as ex:

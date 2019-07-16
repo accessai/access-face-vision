@@ -16,14 +16,13 @@ def get_listener_logger(que):
 
 
 def conf_worker_logger(que):
-    que_handler = logging.handlers.QueueHandler(que)
-    que_handler.setLevel(logging.INFO)
-    que_handler.setFormatter(logging.Formatter(FORMAT))
-
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.WARNING)
 
     if not root_logger.hasHandlers():
+        que_handler = logging.handlers.QueueHandler(que)
+        que_handler.setLevel(logging.INFO)
+        que_handler.setFormatter(logging.Formatter(FORMAT))
         root_logger.addHandler(que_handler)
 
 
