@@ -1,14 +1,11 @@
 import logging
 import base64
-import asyncio
-from concurrent.futures import ProcessPoolExecutor
 
 logger = logging.getLogger('SERVER')
 
 from sanic import Sanic
 from sanic.response import json as sjson
 from sanic_cors import CORS
-import numpy as np
 from PIL import Image
 
 from access_face_vision.exceptions import AccessException
@@ -18,21 +15,24 @@ app = Sanic(name='afv')
 
 def setup_routes(cmd_args, afv):
 
-    CORS(app, resources={r"/*": {"origins": cmd_args.cors}})
+    CORS(app, resources={r"/*": {"origins": cmd_args.cors}}, automatic_options=True)
 
-    # def check_cors(f):
-    #     def cors(*args, **kwargs):
-    #         request = args[0]
-    #
-    #         request.setHeader('Access-Control-Allow-Origin', cmd_args.cors)
-    #         request.setHeader('Access-Control-Allow-Methods', 'POST')
-    #         request.setHeader('Access-Control-Allow-Headers', '*')
-    #         if request.method.decode('utf-8', 'strict') == 'OPTIONS':
-    #             return ''
-    #
-    #         return f(*args, **kwargs)
-    #
-    #     return cors
+    def ae_error_handler(request, ae):
+        logger.error("Error: {}".format(ae))
+        return sjson({"Error": str(ae)}, status=ae.error_code)
+
+    def general_error_handler(request, ex):
+        logger.error("Error: {}".format(ex))
+        return sjson({"Error": "Internal Server Error"}, status=500)
+
+    app.error_handler.add(AccessException, ae_error_handler)
+    app.error_handler.add(Exception, general_error_handler)
+
+    def validate_request_keys(received_keys, required_keys):
+
+        for key in required_keys:
+            if key not in received_keys:
+                raise AccessException('{} is required.'.format(key), error_code=400)
 
     async def handle_request(func, *args):
         resp_code = 200
@@ -49,49 +49,84 @@ def setup_routes(cmd_args, afv):
 
         return sjson(resp, status=resp_code)
 
-    @app.route('/', methods=['GET', 'OPTIONS'])
+    @app.route('/', methods=['GET'])
     def status(request):
-        return "{'Status': 'OK'}"
+        return sjson({'Status': 'OK'})
 
-    @app.route('/afv/v1/parse/image', methods=['POST', 'OPTIONS'])
+    @app.route('/afv/v1/parse/image', methods=['POST'])
     async def parse_img(request):
 
         req_json = request.json
+
+        received_keys = req_json.keys()
+        required_keys = ['face_group']
+        validate_request_keys(received_keys, required_keys)
+
         img_bytes = base64.decodebytes(req_json['image'].encode('utf-8'))
         img = Image.frombytes('RGB', (req_json['width'], req_json['height']), img_bytes, 'raw')
-
         return await handle_request(afv.parse_image, *(img, req_json['face_group']))
 
-    @app.route("/afv/v1/facegroup", methods=['POST', 'OPTIONS'])
+    @app.route("/afv/v1/facegroup", methods=['POST'])
     async def create_face_group(request):
 
-        try:
-            request_json = request.json
-        except:
-            request.setResponseCode(500)
-            return sjson({"Error":"Bad Request"}, status=500)
+        req_json = request.json
 
+        received_keys = req_json.keys()
+        required_keys = ['face_group']
+        validate_request_keys(received_keys, required_keys)
 
-        return handle_request(request, afv.create_face_group, *(request_json['face_group'],))
+        face_group = req_json['face_group']
+        return await handle_request(afv.create_face_group, *(face_group,))
 
-    @app.route("/afv/v1/facegroup", methods=['PUT'])
+    @app.route("/afv/v1/facegroup", methods=['DELETE'])
+    async def delete_face_group(request):
+
+        req_json = request.json
+
+        received_keys = req_json.keys()
+        required_keys = ['face_group']
+        validate_request_keys(received_keys, required_keys)
+
+        face_group = req_json['face_group']
+        return await handle_request(afv.delete_face_group, *(face_group,))
+
+    @app.route("/afv/v1/facegroup/faceid", methods=['PUT'])
     async def append_to_face_group(request):
 
-        try:
-            request_json = request.json
-            img = np.fromstring(base64.decodebytes(request_json['image'].encode('utf-8')), np.uint8)
-            img = cv2.imdecode(img, cv2.IMREAD_COLOR)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        req_json = request.json
 
-        except Exception as ex:
-            logger.error(ex)
-            request.setResponseCode(500)
-            return sjson({"Error":"Bad Request"}, status=500)
+        received_keys = req_json.keys()
+        required_keys = ['face_group']
+        validate_request_keys(received_keys, required_keys)
 
-        return handle_request(request, afv.append_to_face_group, *(request_json['face_group'],
-                                                                   img,
-                                                                   request_json['label']))
+        if 'face_group' not in required_keys:
+            raise AccessException('face_group is required', 400)
 
+        face_group = req_json['face_group']
+        label = req_json['label']
+        img_bytes = base64.decodebytes(req_json['image'].encode('utf-8'))
+        img = Image.frombytes('RGB', (req_json['width'], req_json['height']), img_bytes, 'raw')
+        return await handle_request(afv.append_to_face_group, *(face_group, img, label))
 
-if __name__ == '__main__':
-    pass
+    @app.route("/afv/v1/facegroup/faceids", methods=['POST'])
+    async def get_face_ids(request):
+
+        req_json = request.json
+
+        received_keys = req_json.keys()
+        required_keys = ['face_group']
+        validate_request_keys(received_keys, required_keys)
+
+        face_group = req_json['face_group']
+        return await handle_request(afv.list_face_ids, *(face_group,))
+
+    @app.route("/afv/v1/facegroup/faceid", methods=['DELETE'])
+    async def delete_from_face_group(request):
+
+        req_json = request.json
+
+        received_keys = req_json.keys()
+        required_keys = ['face_group', 'face_id']
+        validate_request_keys(received_keys, required_keys)
+
+        return await handle_request(afv.delete_from_face_group, *(req_json['face_group'], req_json['face_id']))

@@ -21,9 +21,11 @@ def ensure_directory(path):
 def roundUp(num):
     return math.ceil(num*100)/100.
 
+
 def create_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', help='Mode of application', required=False, type=str, choices=['server', 'video'], default='server')
+    parser.add_argument('--mode', help='Mode of application', required=False, type=str,
+                        choices=['server', 'live-video', 'recorded-video', 'training'], default='server')
     parser.add_argument('--host', help='Host address to bind to', required=False, type=str, default='localhost')
     parser.add_argument('--port', help='Port number to bind to', required=False, type=int, default=5001)
     parser.add_argument('--cors', help='Cross Origin Resource Sharing host names', required=False, type=str, default='localhost')
@@ -37,6 +39,7 @@ def create_parser():
     parser.add_argument('--face_group', help='Path to encoded faces file', required=False, type=str, default='../output/encoded_faces.npz')
     parser.add_argument('--face_group_dir', help='Path to Face Group directory', required=False, type=str, default='../output')
     parser.add_argument('--img_dir', help='Image directory', required=False, type=str, default='')
+    parser.add_argument('--video_dir', help='Video directory', required=False, type=str, default='')
     parser.add_argument('--img_red_factor', help='Reduce Image size with this factor before processing', required=False, type=float, default=0.6)
     parser.add_argument('--detection_threshold', help='Face Detection threshold', required=False, type=float, default=0.8)
     parser.add_argument('--recognition_threshold', help='Face Detection threshold', required=False, type=float, default=0.7)

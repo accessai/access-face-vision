@@ -81,8 +81,9 @@ class AccessFaceVisionImage(AccessFaceVision):
         self.fg_manager.create_face_group(fg_name)
         return {'message': 'Face group {} created successfully'.format(fg_name)}
 
-    def append_to_face_group(self, fg_name, img_bytes, label):
-        obj = self.encode(img_bytes)
+    def append_to_face_group(self, fg_name, img, label):
+        img = np.array(img)
+        obj = self.encode(img)
         faces = obj.get('detections', [])
 
         if len(faces) == 0:
@@ -90,20 +91,23 @@ class AccessFaceVisionImage(AccessFaceVision):
         elif len(faces) > 1:
             return AccessException('More than one face found', error_code=400)
         else:
-            embedding = faces[0]['embeddings'][0]
+            embedding = obj['embeddings'][0]
             face_id = self.fg_manager.append_to_face_group(fg_name, embedding, label)
             return {'face_id': face_id}
 
     def delete_face_group(self, fg_name):
         self.fg_manager.delete_face_group(fg_name)
+        return {"success": "{} deleted".format(fg_name)}
 
-    def delete_from_face_group(self, face_id, fg_name):
-        self.delete_from_face_group(face_id, fg_name)
+    def delete_from_face_group(self, fg_name, face_id):
+        self.fg_manager.delete_from_face_group(face_id, fg_name)
+
+        return {"success": "{} deleted from {}".format(face_id, fg_name)}
 
     def list_face_ids(self, fg_name):
         fg = self.fg_manager.get_face_group(fg_name)
 
-        return {'face_ids': fg.faceIds}
+        return {'face_ids': fg.faceIds.tolist()}
 
 
 class AccessFaceVisionVideo(AccessFaceVision):

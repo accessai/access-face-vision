@@ -1,5 +1,4 @@
 import os
-from access_face_vision import access_logger
 from time import sleep, time
 import traceback
 from glob import glob
