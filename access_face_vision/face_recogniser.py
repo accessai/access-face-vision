@@ -9,6 +9,7 @@ from access_face_vision.access_logger import get_logger
 from access_face_vision.component import AccessComponent
 from access_face_vision.utils import roundUp
 
+
 class CosineSimFaceRecogniser(AccessComponent):
 
     def __init__(self, cmd_args, in_que, out_que, fg_manager, log_que, log_level, kill_app, is_sub_proc=False):
@@ -64,10 +65,10 @@ def face_recogniser(cmd_args, in_que, out_que, log_que, log_level, kill_proc, ki
     try:
 
         logger.debug("Loading Face recognition model...")
-        fg = np.load(cmd_args.face_group)
-        known_embeddings = fg.embeddings
-        known_labels = fg.labels
-        known_face_ids = fg.faceIds
+        fg_arr = np.load(cmd_args.face_group)
+        known_embeddings = fg_arr['embeddings']
+        known_labels = fg_arr['labels']
+        known_face_ids = fg_arr['faceIds']
 
         while kill_proc.value == 0 and kill_app.value == 0:
 

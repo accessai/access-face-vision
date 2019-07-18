@@ -36,7 +36,7 @@ def create_parser():
     parser.add_argument('--video_out', help='Path of output video file', required=False, default='../output/video.mp4')
     parser.add_argument('--img_height', help='Image height to capture from camera', required=False, type=int, default=720)
     parser.add_argument('--img_width', help='Image width to capture from camera', required=False, type=int, default=1280)
-    parser.add_argument('--face_group', help='Path to encoded faces file', required=False, type=str, default='../output/encoded_faces.npz')
+    parser.add_argument('--face_group', help='Path to encoded faces file', required=False, type=str, default='../output/default.npz')
     parser.add_argument('--face_group_dir', help='Path to Face Group directory', required=False, type=str, default='../output')
     parser.add_argument('--img_dir', help='Image directory', required=False, type=str, default='')
     parser.add_argument('--video_dir', help='Video directory', required=False, type=str, default='')
@@ -45,6 +45,8 @@ def create_parser():
     parser.add_argument('--recognition_threshold', help='Face Detection threshold', required=False, type=float, default=0.7)
     parser.add_argument('--min_face_height', help='Minimum face height required for recognition', required=False, type=int, default=100)
     parser.add_argument('--log', help='Logging level', required=False, type=str, default='info')
+    parser.add_argument('--log_screen', help='Print logging messages on console screen', required=False, type=bool, default=True)
+    parser.add_argument('--log_file', help='Write log messages to this file', required=False, type=str, default=None)
 
     return parser.parse_args()
 

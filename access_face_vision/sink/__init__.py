@@ -2,7 +2,7 @@ from time import time
 import cv2
 
 
-def draw_on_frame(obj):
+def draw_on_frame(obj, logger):
     frame = obj.get('raw_frame')
     cap_time = obj.get('cap_time')
     out_time = time()
@@ -29,7 +29,8 @@ def draw_on_frame(obj):
         total_time,
         1 / total_time
     )
-    cv2.putText(frame, time_txt, (5, 30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8, color=(0, 255, 0),
-                thickness=1)
+    logger.debug(time_txt)
+    # cv2.putText(frame, time_txt, (5, 30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8, color=(0, 255, 0),
+    #             thickness=1)
 
     return frame

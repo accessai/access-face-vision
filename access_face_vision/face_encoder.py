@@ -2,6 +2,7 @@ import os
 from time import time
 import traceback
 from queue import Empty
+import pkg_resources
 
 from keras.models import load_model
 import cv2
@@ -17,7 +18,8 @@ class FaceEncoder(AccessComponent):
         self.is_sub_proc = is_sub_proc
 
         if is_sub_proc is False:
-            self.face_encoder_model = load_model('./models/accessai_v1_facesim_weights.h5')
+            model_file = pkg_resources.resource_filename(__name__, os.path.join('models','accessai_v1_facesim_weights.h5'))
+            self.face_encoder_model = load_model(model_file, compile=False)
             self.face_encoder_model._make_predict_function()
 
         super(FaceEncoder, self).__init__(face_encoder,

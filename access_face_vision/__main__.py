@@ -1,11 +1,14 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables Tensorflow warning messages
+
 from access_face_vision import access_logger
-from multiprocessing import Queue, Value
 
 from time import sleep
 import signal
 import sys
 from time import time
-from PIL import Image
+from multiprocessing import Queue, Value
+
 import numpy as np
 
 from access_face_vision.source.camera import Camera
@@ -13,9 +16,7 @@ from access_face_vision.face_detector import FaceDetector
 from access_face_vision.face_encoder import FaceEncoder
 from access_face_vision.face_recogniser import CosineSimFaceRecogniser
 from access_face_vision.sink.display import Display
-
 from access_face_vision.face_group_manager import FaceGroupLocalManager
-
 from access_face_vision import utils
 from access_face_vision import server
 from access_face_vision.exceptions import AccessException
@@ -26,13 +27,13 @@ kill_app = Value('i', 0)
 def signal_handler(signum, frame):
     logger.warning('Exiting from main process...')
     kill_app.value = 1
+
+    if server_app:
+        server_app.stop()
+
     que_listener.stop()
     sleep(1)
     sys.exit(0)
-
-
-signal.signal(signal.SIGTERM, signal_handler)
-signal.signal(signal.SIGINT, signal_handler)
 
 
 class AccessFaceVision(object):
@@ -145,25 +146,31 @@ if __name__ == '__main__':
 
     cmd_args = utils.create_parser()
 
-    logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log)
-
+    logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log,
+                                                                          cmd_args.log_screen,
+                                                                          cmd_args.log_file)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    server_app = None
     if cmd_args.mode == 'server':
         afv = AccessFaceVisionImage(cmd_args)
         server_app = server.app
-        server.setup_routes(cmd_args, afv)
-        sleep(20)
+        server.setup_routes(cmd_args, afv, logger)
         logger.info("Ready...")
-        server_app.run(host=cmd_args.host, port=cmd_args.port)
-    elif cmd_args.mode == 'video':
-        afv = AccessFaceVisionVideo(cmd_args)
-        afv.start()
-
-        while kill_app.value == 0:
-            sleep(0.5)
-
-        afv.stop()
-        logger.info("Exiting application")
-        que_listener.stop()
+        server_app.run(host=cmd_args.host, port=cmd_args.port,
+                       register_sys_signals=False, access_log=False)
     else:
-        raise RuntimeError('Unknown mode.')
+
+        if cmd_args.mode == 'live-video':
+            afv = AccessFaceVisionVideo(cmd_args)
+            afv.start()
+
+            while kill_app.value == 0:
+                sleep(0.2)
+
+            afv.stop()
+            logger.info("Exiting application")
+            que_listener.stop()
+        else:
+            raise RuntimeError('Unknown mode.')
 

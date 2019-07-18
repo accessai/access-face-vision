@@ -5,7 +5,7 @@ Face detection and recognition APIs.
 ### With pip
  - ##### Installation
 ```bash
-pip install access-face-vision --extra-index-url https://pypi.accessai.co/access-face-vision
+pip install access-face-vision
 ```
 
 - ##### Running Inferences
@@ -67,13 +67,5 @@ docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode serve
 
 # Start camera feed processor
 docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode server
-```
-
-### Inference
- - Image
- ```bash
-    curl -X POST \
-  http://localhost:5001/parse \
-  -F data=@"path to jpeg image"
 ```
 

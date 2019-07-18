@@ -12,6 +12,7 @@ class Display(AccessComponent):
 
     def __init__(self, cmd_args, in_que, log_que, log_level, kill_app, is_sub_proc=False):
         self.is_sub_proc = is_sub_proc
+        self.logger = get_logger(log_que, log_level)
 
         super(Display, self).__init__(display,
                                       cmd_args=cmd_args,
@@ -21,12 +22,12 @@ class Display(AccessComponent):
                                       kill_app=kill_app)
 
     def __call__(self, obj):
-        return draw(obj)
+        return draw(obj, self.logger)
 
 
-def draw(obj):
+def draw(obj, logger):
 
-    frame = draw_on_frame(obj)
+    frame = draw_on_frame(obj, logger)
 
     cv2.imshow('Display', frame)
     if cv2.waitKey(10) & 0xFF == ord('q'):
@@ -52,7 +53,7 @@ def display(cmd_args, in_que, log_que, log_level, kill_proc, kill_app):
             if obj.get('done', False):
                 break
 
-            if not draw(obj):
+            if not draw(obj, logger):
                 kill_proc.value = 1
                 kill_app.value = 1
                 break

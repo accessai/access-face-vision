@@ -4,6 +4,7 @@ mtcnn==0.0.9
 tensorflow==1.12.3
 pillow==6.0.0
 scikit-learn==0.21.2
-klein==19.6.0
 pypiwin32==223
 pymongo==3.8.0
+sanic==19.6.2
+sanic_cors==0.9.8.post1

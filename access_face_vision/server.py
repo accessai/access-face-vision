@@ -1,7 +1,4 @@
-import logging
 import base64
-
-logger = logging.getLogger('SERVER')
 
 from sanic import Sanic
 from sanic.response import json as sjson
@@ -13,7 +10,7 @@ from access_face_vision.exceptions import AccessException
 app = Sanic(name='afv')
 
 
-def setup_routes(cmd_args, afv):
+def setup_routes(cmd_args, afv, logger):
 
     CORS(app, resources={r"/*": {"origins": cmd_args.cors}}, automatic_options=True)
 
