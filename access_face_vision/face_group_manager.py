@@ -8,7 +8,6 @@ from time import time
 import numpy as np
 from numpy import savez_compressed
 
-from access_face_vision.db.mongo_manager import MongoManager
 from access_face_vision.exceptions import AccessException
 
 logger = logging.getLogger(__name__)
@@ -29,34 +28,6 @@ class FaceGroupManager(object):
 
     def generate_face_id(self, label):
         return "{}-{}-{}".format(label[:4], str(uuid.uuid4()), str(int(time()))[-8:])
-
-
-class FaceGroupMongoManager(FaceGroupManager):
-
-    def __init__(self, mongo_connect_str):
-        super(FaceGroupMongoManager, self).__init__()
-        self.connection_str = mongo_connect_str
-        self.mongo_manager = MongoManager()
-        self.mongo_client = self.mongo_manager.get_client()
-        self.mongo_db = self.mongo_manager.get_db(self.mongo_client)
-
-    def _get_collection(self, collection_name):
-        return self.mongo_manager.get_collection(self.mongo_db, collection_name)
-
-    def create_face_group(self, face_group_name):
-        return self._get_collection(face_group_name)
-
-    def append_to_face_group(self, face, face_group_name):
-        collection = self._get_collection(face_group_name)
-        return self.mongo_manager.insert_doc(face, collection)
-
-    def delete_from_face_group(self, face_id, face_group_name):
-        collection = self._get_collection(face_group_name)
-        return self.mongo_manager.delete_records({'faceId': face_id}, collection)
-
-    def delete_face_group(self, face_group_name):
-        collection = self._get_collection(face_group_name)
-        self.mongo_manager.delete_collection(collection)
 
 
 class FaceGroupLocalManager(FaceGroupManager):
