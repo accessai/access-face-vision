@@ -1,3 +1,6 @@
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 # Access Face Vision
 
 Face detection and recognition APIs.
@@ -69,3 +72,5 @@ docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode serve
 docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode server
 ```
 
+## Contribution
+ Contributions are welcome. Feel free to raise PRs! with any improvements.

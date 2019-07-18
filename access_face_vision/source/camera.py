@@ -72,8 +72,6 @@ def capture(cmd_args, out_queue, log_que, log_level, kill_proc, kill_app, draw_f
             tik = time()
             camera_fps = math.ceil(count / 2)
             NUM_FRAME_TO_SKIP = math.ceil((camera_fps - REQUIRED_FPS) / REQUIRED_FPS)
-            logger.debug(str(('Camera FPS: ', camera_fps, ' Frames to skip: ',
-                              NUM_FRAME_TO_SKIP, 'Effective FPS', REQUIRED_FPS)))
             count=0
 
         if ret is True:

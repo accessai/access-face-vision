@@ -6,7 +6,7 @@ setup(
     name="access_face_vision",
     classifiers=[
         "Intended Audience :: Developers",
-        "License :: Commercial License",
+        "License :: Apache Software License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.6",
         "Operating System :: OS Independent",
