@@ -2,6 +2,7 @@ import os
 import argparse
 import math
 
+import wget
 
 def clean_queue(queue):
 
@@ -12,6 +13,13 @@ def clean_queue(queue):
         pass
     finally:
         return True
+
+
+def get_file(url, out_file_path, logger):
+    if not os.path.exists(out_file_path):
+        ensure_directory(os.path.dirname(out_file_path))
+        logger.info("Downloading {}".format(url))
+        wget.download(url, out_file_path)
 
 
 def ensure_directory(path):

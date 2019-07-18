@@ -74,3 +74,7 @@ docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode serve
 
 ## Contribution
  Contributions are welcome. Feel free to raise PRs! with any improvements.
+
+
+## Credit
+Face Encoder model: https://github.com/nyoki-mtl/keras-facenet

@@ -8,3 +8,4 @@ pypiwin32==223
 pymongo==3.8.0
 sanic==19.6.2
 sanic_cors==0.9.8.post1
+wget==3.2

@@ -1,2 +1,1 @@
 include LICENSE README.md requirements.txt CODE_OF_CONDUCT.md
-recursive-include access_face_vision/models *

@@ -1,3 +1,4 @@
+import pkg_resources
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables Tensorflow warning messages
 
@@ -149,6 +150,10 @@ if __name__ == '__main__':
     logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log,
                                                                           cmd_args.log_screen,
                                                                           cmd_args.log_file)
+
+    model_file = pkg_resources.resource_filename(__name__, os.path.join('models', 'accessai_v1_facesim_weights.h5'))
+    utils.get_file("https://storage.googleapis.com/accessai/accessai_v1_facesim_weights.h5", model_file, logger)
+
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
     server_app = None
