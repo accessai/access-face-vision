@@ -22,7 +22,7 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     include_package_data=True,
-    url="https://accessai.co/access-face-vision.html",
+    url="https://github.com/accessai/access-face-vision",
     install_requires=[
         "opencv-python==4.1.0.25",
         "keras==2.2.4",
