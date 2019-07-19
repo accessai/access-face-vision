@@ -3,7 +3,7 @@
 
 # Access Face Vision
 
-Face detection and recognition APIs.
+Face detection and recognition Application.
 
 ### With pip
  - ##### Installation
@@ -11,35 +11,9 @@ Face detection and recognition APIs.
 pip install access-face-vision
 ```
 
-- ##### Running Inferences
+- ##### Training/Creating FaceGroup
 ```bash
-# server mode
-python -m access_face_vision --mode server
-
-curl -X POST \
-  http://localhost:5001/afv/v1/parse \
-  -H 'cache-control: no-cache' \
-  -H 'content-type: application/json' \
-  -d '{
-	"face_group": "default",
-	"width": 800,
-	"height": 600,
-	"image": "base64-encoded"}'
-
-
-# Live video feed
-python -m access_face_vision --mode live-video --camera-index 0 --camera_wait 25
-python -m access_face_vision --mode live-video --camera-index rtp://camera-url
-
-
-# Pre recorded video
-python -m access_face_vision --mode recorded-video --video_dir path-to-video-directory 
-python -m access_face_vision --mode recorded-video --video_path path-to-video-file 
-```
-
-- ##### Training face embeddings
-```bash
-python -m access_face_vision.train_face_recognition_model --mode training --img_dir path-to-image-directory
+python -m access_face_vision.train_face_recognition_model --img_dir path-to-image-directory --face_group myfacegroup
 
 # Directory structure
 # **/Images/
@@ -49,8 +23,17 @@ python -m access_face_vision.train_face_recognition_model --mode training --img_
 #          B/
 #           B_S_01.jpg
 #           B_S_02.jpg
-
 ```
+
+- ##### Running Inferences
+```bash
+# Live video feed
+python -m access_face_vision --mode live-video --camera-index 0 --camera_wait 25 --face_group myfacegroup
+
+# server mode
+python -m access_face_vision --mode server
+```
+Use [access-client](https://github.com/accessai/access-client) to make requests to this server
 
 
 ### Docker image
@@ -69,7 +52,7 @@ mkdir -p accessai/afv
 docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode server
 
 # Start camera feed processor
-docker run -v $(pwd)/afv:/accessai/afv python -m access_face_vision --mode server
+docker run -v $(pwd)/afv:/accessai/af v python -m access_face_vision --mode server
 ```
 
 ## Contribution

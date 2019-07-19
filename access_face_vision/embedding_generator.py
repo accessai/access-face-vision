@@ -25,7 +25,7 @@ def embedding_generator(cmd_args, in_que, log_que, log_level, kill_proc, kill_ap
     try:
         logger.info("Generating embeddings...")
         face_group_manager = FaceGroupLocalManager(cmd_args)
-        face_group_manager.create_face_group('default')
+        face_group_manager.create_face_group('default' or cmd_args.face_group)
 
         while kill_proc.value == 0 and kill_app.value == 0:
             try:

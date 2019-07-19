@@ -1,13 +1,7 @@
-import logging
-import argparse
 from multiprocessing import Queue, Value
 from access_face_vision import access_logger
 from time import sleep
 
-log_que = Queue(-1)
-que_listener = access_logger.get_listener_logger(log_que)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 from access_face_vision.face_detector import FaceDetector
 from access_face_vision.face_encoder import FaceEncoder
@@ -43,4 +37,9 @@ def train_face_recognition_model(cmd_args):
 
 if __name__ == '__main__':
     cmd_args = utils.create_parser()
+
+    logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log,
+                                                                          cmd_args.log_screen,
+                                                                          cmd_args.log_file)
+
     train_face_recognition_model(cmd_args)
