@@ -1,6 +1,6 @@
 
-__title__ = "access_face_vision"
-__version__ = "0.0.2"
+__title__ = "access-face-vision"
+__version__ = "0.0.3"
 __summary__ = "Ready to use Face Detection and Recognition"
 __uri__ = "http://accessai.co"
 __author__ = "ConvexHull Technology"
