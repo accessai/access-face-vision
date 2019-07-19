@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from access_face_vision.access_logger import get_logger
 from access_face_vision.component import AccessComponent
+from access_face_vision.face_group_manager import FaceGroupLocalManager
 from access_face_vision.utils import roundUp
 
 
@@ -46,11 +47,13 @@ def recognise(obj, trained_embeddings, trained_labels, trained_face_ids, recogni
             face['label'] = label
             face['faceId'] = faceId
             face['recognition_confidence'] = conf
+            if face.get('confidence'):
+                face['confidence'] = roundUp((face['confidence'] + conf)/2.)
+                conf = face['confidence']
             if conf < recognition_threshold:
                 face['label'] = 'Unknown'
 
-            if face.get('confidence'):
-                face['confidence'] = roundUp((face['confidence'] + conf)/2.)
+
 
     time_out = time()
     obj['recognition_time'] = time_out - time_in
@@ -65,10 +68,11 @@ def face_recogniser(cmd_args, in_que, out_que, log_que, log_level, kill_proc, ki
     try:
 
         logger.debug("Loading Face recognition model...")
-        fg_arr = np.load(cmd_args.face_group)
-        known_embeddings = fg_arr['embeddings']
-        known_labels = fg_arr['labels']
-        known_face_ids = fg_arr['faceIds']
+        fg_manager = FaceGroupLocalManager(cmd_args)
+        fg = fg_manager.get_face_group(cmd_args.face_group)
+        known_embeddings = fg.embeddings
+        known_labels = fg.labels
+        known_face_ids = fg.faceIds
 
         while kill_proc.value == 0 and kill_app.value == 0:
 

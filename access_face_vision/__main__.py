@@ -18,6 +18,7 @@ from access_face_vision.face_encoder import FaceEncoder
 from access_face_vision.face_recogniser import CosineSimFaceRecogniser
 from access_face_vision.sink.display import Display
 from access_face_vision.face_group_manager import FaceGroupLocalManager
+from access_face_vision.train_face_recognition_model import train_face_recognition_model
 from access_face_vision import utils
 from access_face_vision import server
 from access_face_vision.exceptions import AccessException
@@ -147,12 +148,16 @@ if __name__ == '__main__':
 
     cmd_args = utils.create_parser()
 
+    if cmd_args.face_group:
+        cmd_args.face_group = os.path.basename(cmd_args.face_group)
+        cmd_args.face_group_dir = os.path.dirname(cmd_args.face_group) or './'
+
     logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log,
                                                                           cmd_args.log_screen,
                                                                           cmd_args.log_file)
 
     model_file = pkg_resources.resource_filename(__name__, os.path.join('models', 'accessai_v1_facesim_weights.h5'))
-    utils.get_file("https://storage.googleapis.com/accessai/accessai_v1_facesim_weights.h5", model_file, logger)
+    utils.get_file("https://storage.googleapis.com/accessai/accessai_v1_facesim_weights.h5", model_file)
 
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
@@ -164,18 +169,21 @@ if __name__ == '__main__':
         logger.info("Ready...")
         server_app.run(host=cmd_args.host, port=cmd_args.port,
                        register_sys_signals=False, access_log=False)
+    elif cmd_args.mode == 'live-video':
+        afv = AccessFaceVisionVideo(cmd_args)
+        afv.start()
+
+        while kill_app.value == 0:
+            sleep(0.2)
+
+        afv.stop()
+        logger.info("Exiting application")
+        que_listener.stop()
+
+    elif cmd_args.mode == "train":
+        train_face_recognition_model(cmd_args, logger, log_que)
+        logger.info("Exiting application")
+        que_listener.stop()
     else:
-
-        if cmd_args.mode == 'live-video':
-            afv = AccessFaceVisionVideo(cmd_args)
-            afv.start()
-
-            while kill_app.value == 0:
-                sleep(0.2)
-
-            afv.stop()
-            logger.info("Exiting application")
-            que_listener.stop()
-        else:
-            raise RuntimeError('Unknown mode.')
+        raise RuntimeError('Unknown mode.')
 

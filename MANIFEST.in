@@ -1,1 +1,3 @@
 include LICENSE README.md requirements.txt CODE_OF_CONDUCT.md
+prune tests*
+prune samples*

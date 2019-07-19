@@ -10,7 +10,7 @@ from access_face_vision.embedding_generator import EmbeddingGenerator
 from access_face_vision import utils
 
 
-def train_face_recognition_model(cmd_args):
+def train_face_recognition_model(cmd_args, logger, log_que):
 
     kill_app = Value('i', 0)
     camera_out_que = Queue()
@@ -27,12 +27,8 @@ def train_face_recognition_model(cmd_args):
     embed_gen.start()
     dir_reader.start()
 
-    que_listener.start()
     while kill_app.value != 1:
         sleep(0.2)
-
-    logger.info('Main process exited')
-    que_listener.stop()
 
 
 if __name__ == '__main__':
@@ -41,5 +37,6 @@ if __name__ == '__main__':
     logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log,
                                                                           cmd_args.log_screen,
                                                                           cmd_args.log_file)
-
-    train_face_recognition_model(cmd_args)
+    que_listener.start()
+    train_face_recognition_model(cmd_args, logger, log_que)
+    que_listener.stop()

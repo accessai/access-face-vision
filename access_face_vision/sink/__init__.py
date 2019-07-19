@@ -18,7 +18,7 @@ def draw_on_frame(obj, logger):
     for r in obj.get('uncertain_detection', []):
         top_left, bottom_right = r['box']
         cv2.rectangle(img=frame, pt1=top_left, pt2=bottom_right, color=(0, 255, 0), thickness=2)
-        cv2.putText(frame, "Unknown {}".format("{:0.2f}".format(r.get('confidence'))),
+        cv2.putText(frame, "Unknown {}".format("{:0.2f}".format(0.)),
                     (top_left[0], top_left[1]), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8,
                     color=(0, 255, 0), thickness=1)
 

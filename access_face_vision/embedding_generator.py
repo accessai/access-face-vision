@@ -25,7 +25,7 @@ def embedding_generator(cmd_args, in_que, log_que, log_level, kill_proc, kill_ap
     try:
         logger.info("Generating embeddings...")
         face_group_manager = FaceGroupLocalManager(cmd_args)
-        face_group_manager.create_face_group('default' or cmd_args.face_group)
+        face_group_manager.create_face_group(cmd_args.face_group or 'default')
 
         while kill_proc.value == 0 and kill_app.value == 0:
             try:
@@ -39,11 +39,14 @@ def embedding_generator(cmd_args, in_que, log_que, log_level, kill_proc, kill_ap
                 break
 
             if len(obj.get('faces', [])) == 1:
-                face_group_manager.append_to_face_group(obj.get('face_group') or 'default',
+                face_group_manager.append_to_face_group(cmd_args.face_group or 'default',
                                                         obj['embeddings'][0],
                                                         obj['label'])
+                logger.info("Face {} added.".format(obj['label']))
             else:
                 logger.error("0 or more than 1 face detected for {}".format(obj['label']))
+
+        logger.info('Completed!')
 
     except Exception as ex:
         logger.error(traceback.format_exc())

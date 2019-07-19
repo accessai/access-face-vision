@@ -34,7 +34,7 @@ class FaceGroupLocalManager(FaceGroupManager):
 
     def __init__(self, cmd_args):
         super(FaceGroupLocalManager, self).__init__()
-        self.dir_name = cmd_args.face_group_dir
+        self.dir_name = cmd_args.face_group_dir or './'
         self.face_group_store = {}
         self.fill_face_group_store()
 

@@ -13,7 +13,7 @@ pip install access-face-vision
 
 - ##### Training/Creating FaceGroup
 ```bash
-python -m access_face_vision.train_face_recognition_model --img_dir path-to-image-directory --face_group myfacegroup
+python -m access_face_vision --mode train --img_dir samples/celebrities --face_group celebrities
 
 # Directory structure
 # **/Images/

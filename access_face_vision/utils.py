@@ -15,10 +15,9 @@ def clean_queue(queue):
         return True
 
 
-def get_file(url, out_file_path, logger):
+def get_file(url, out_file_path):
     if not os.path.exists(out_file_path):
         ensure_directory(os.path.dirname(out_file_path))
-        logger.info("Downloading {}".format(url))
         wget.download(url, out_file_path)
 
 
@@ -33,19 +32,19 @@ def roundUp(num):
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', help='Mode of application', required=False, type=str,
-                        choices=['server', 'live-video', 'recorded-video', 'training'], default='server')
+                        choices=['server', 'live-video', 'recorded-video', 'train'], default='server')
     parser.add_argument('--host', help='Host address to bind to', required=False, type=str, default='localhost')
     parser.add_argument('--port', help='Port number to bind to', required=False, type=int, default=5001)
     parser.add_argument('--cors', help='Cross Origin Resource Sharing host names', required=False, type=str, default='localhost')
     parser.add_argument('--camera-url', help='RTP camera URL on the network', required=False, type=str, default='')
     parser.add_argument('--camera-index', help='Camera Index', required=False, type=int, default=0)
-    parser.add_argument('--camera_wait', help='Time to wait before capturing', required=False, default=25)
-    parser.add_argument('--fps', help='FPS with which to capture frames', required=False, default=3)
+    parser.add_argument('--camera_wait', help='Time to wait before capturing', type=int, required=False, default=25)
+    parser.add_argument('--fps', help='FPS with which to capture frames', type=int, required=False, default=3)
     parser.add_argument('--video_out', help='Path of output video file', required=False, default='../output/video.mp4')
     parser.add_argument('--img_height', help='Image height to capture from camera', required=False, type=int, default=720)
     parser.add_argument('--img_width', help='Image width to capture from camera', required=False, type=int, default=1280)
-    parser.add_argument('--face_group', help='Path to encoded faces file', required=False, type=str, default='../output/default.npz')
-    parser.add_argument('--face_group_dir', help='Path to Face Group directory', required=False, type=str, default='../output')
+    parser.add_argument('--face_group', help='Path to encoded faces file', required=False, type=str, default=None)
+    parser.add_argument('--face_group_dir', help='Path to Face Group directory', required=False, type=str, default=None)
     parser.add_argument('--img_dir', help='Image directory', required=False, type=str, default='')
     parser.add_argument('--video_dir', help='Video directory', required=False, type=str, default='')
     parser.add_argument('--img_red_factor', help='Reduce Image size with this factor before processing', required=False, type=float, default=0.6)
