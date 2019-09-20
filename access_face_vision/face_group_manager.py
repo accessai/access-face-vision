@@ -34,9 +34,13 @@ class FaceGroupLocalManager(FaceGroupManager):
 
     def __init__(self, cmd_args):
         super(FaceGroupLocalManager, self).__init__()
-        self.dir_name = cmd_args.face_group_dir or './'
+        if cmd_args.face_group is not None:
+            self.dir_name = os.path.dirname(cmd_args.face_group)
+        else:
+            self.dir_name = cmd_args.face_group_dir or './'
+
         self.face_group_store = {}
-        self.fill_face_group_store()
+        self.fill_face_group_store([cmd_args.face_group])
 
     def create_face_group(self, fg_name):
         self._save_face_group(fg_name, FaceGroup(np.array([]), np.array([]), np.array([])), overwrite=False)
@@ -54,7 +58,7 @@ class FaceGroupLocalManager(FaceGroupManager):
         return faceId
 
     def get_face_group(self, fg_name):
-        return self._get_face_group(fg_name)
+        return self._get_face_group(os.path.basename(fg_name).split('.')[0])
 
     def delete_from_face_group(self, face_id, fg_name):
 
@@ -81,8 +85,9 @@ class FaceGroupLocalManager(FaceGroupManager):
     def delete_face_group(self, fg_name):
         self._delete_face_group(fg_name)
 
-    def fill_face_group_store(self):
-        face_groups = glob(os.path.join(self.dir_name, "**/*.npz"))[:5]
+    def fill_face_group_store(self, face_groups=[]):
+        if len(face_groups) == 0:
+            face_groups = glob(os.path.join(self.dir_name, "**/*.npz"))[:5]
         for fg in face_groups:
             fg_name = os.path.basename(fg).split(".")[0]
             self._get_face_group(fg_name)  # updates self.face_group_store internally

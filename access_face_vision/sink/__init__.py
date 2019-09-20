@@ -30,7 +30,7 @@ def draw_on_frame(obj, logger):
         1 / total_time
     )
     logger.debug(time_txt)
-    # cv2.putText(frame, time_txt, (5, 30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8, color=(0, 255, 0),
-    #             thickness=1)
+    cv2.putText(frame, time_txt, (5, 30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8, color=(0, 255, 0),
+                thickness=1)
 
     return frame

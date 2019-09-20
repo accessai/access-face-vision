@@ -28,7 +28,7 @@ python -m access_face_vision --mode train --img_dir samples/celebrities --face_g
 - ##### Running Inferences
 ```bash
 # Live video feed
->python -m access_face_vision --mode live-video --camera-index 0 --camera_wait 30 --face_group celebrities
+python -m access_face_vision --mode live-video --camera-index 0 --camera_wait 30 --face_group celebrities
 
 # server mode
 python -m access_face_vision --mode server --face_group_dir ./

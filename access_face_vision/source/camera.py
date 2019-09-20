@@ -34,7 +34,7 @@ def capture(cmd_args, out_queue, log_que, log_level, kill_proc, kill_app, draw_f
     logger.info('Acquiring camera. Please wait...')
     sleep(CAMERA_WAIT)
     factor = cmd_args.img_red_factor
-    cap = cv2.VideoCapture(device, cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture(device)
     logger.info('Camera acquired')
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, img_dim[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, img_dim[1])

@@ -11,12 +11,14 @@ from time import time
 from multiprocessing import Queue, Value
 
 import numpy as np
+from PIL import Image
 
 from access_face_vision.source.camera import Camera
 from access_face_vision.face_detector import FaceDetector
 from access_face_vision.face_encoder import FaceEncoder
 from access_face_vision.face_recogniser import CosineSimFaceRecogniser
 from access_face_vision.sink.display import Display
+from access_face_vision.sink.image_writer import ImageWriter
 from access_face_vision.face_group_manager import FaceGroupLocalManager
 from access_face_vision.train_face_recognition_model import train_face_recognition_model
 from access_face_vision import utils
@@ -63,7 +65,7 @@ class AccessFaceVisionImage(AccessFaceVision):
 
         faces = []
         detections = obj.get('detections', [])
-        detections.extend(obj.get('uncertain_detection', []))
+        # detections.extend(obj.get('uncertain_detection', []))
         for face in detections:
             faces.append(
                 {'faceId': face['faceId'], 'box': face['rectangular_coordinates'], 'label': face['label'],
@@ -113,6 +115,24 @@ class AccessFaceVisionImage(AccessFaceVision):
         return {'face_ids': fg.faceIds.tolist()}
 
 
+class AccessFaceVisionSingleImage(AccessFaceVisionImage):
+    def __init__(self, cmd_args):
+        super(AccessFaceVisionSingleImage, self).__init__(cmd_args)
+        self.image_writer = ImageWriter(cmd_args,None, None,cmd_args.log, kill_app, is_sub_proc=False)
+
+    def process_image(self):
+
+        img = np.array(Image.open(self.cmd_args.img_in))
+        face_group = self.cmd_args.face_group
+
+        cap_time = time()
+        result = super(AccessFaceVisionSingleImage, self).parse_image(img, face_group)
+        result['cap_time'] = cap_time
+        result['raw_frame'] = img
+        saved_path = self.image_writer(result)
+        logger.info(f"Successfully saved image to {saved_path}")
+
+
 class AccessFaceVisionVideo(AccessFaceVision):
 
     def __init__(self, cmd_args):
@@ -148,10 +168,6 @@ if __name__ == '__main__':
 
     cmd_args = utils.create_parser()
 
-    if cmd_args.face_group:
-        cmd_args.face_group = os.path.basename(cmd_args.face_group)
-        cmd_args.face_group_dir = os.path.dirname(cmd_args.face_group) or './'
-
     logger, log_que, que_listener = access_logger.set_main_process_logger(cmd_args.log,
                                                                           cmd_args.log_screen,
                                                                           cmd_args.log_file)
@@ -179,6 +195,9 @@ if __name__ == '__main__':
         afv.stop()
         logger.info("Exiting application")
         que_listener.stop()
+    elif cmd_args.mode == "image":
+        afv = AccessFaceVisionSingleImage(cmd_args)
+        afv.process_image()
 
     elif cmd_args.mode == "train":
         train_face_recognition_model(cmd_args, logger, log_que)
