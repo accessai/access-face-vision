@@ -24,7 +24,7 @@ setup(
     include_package_data=True,
     url="https://github.com/accessai/access-face-vision",
     install_requires=[
-        "opencv-python==4.1.0.25",
+        "opencv-python==4.1.1.26",
         "keras==2.2.4",
         "mtcnn==0.0.9",
         "tensorflow==1.12.3",
