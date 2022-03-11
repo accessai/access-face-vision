@@ -28,7 +28,7 @@ setup(
         "keras==2.2.4",
         "mtcnn==0.0.9",
         "tensorflow==1.12.3",
-        "pillow==6.0.0",
+        "pillow==9.0.1",
         "scikit-learn==0.21.2",
         "pypiwin32==223",
         "pymongo==3.8.0",
