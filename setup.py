@@ -27,7 +27,7 @@ setup(
         "opencv-python==4.1.0.25",
         "keras==2.2.4",
         "mtcnn==0.0.9",
-        "tensorflow==1.12.3",
+        "tensorflow==2.9.3",
         "pillow==6.0.0",
         "scikit-learn==0.21.2",
         "pypiwin32==223",
